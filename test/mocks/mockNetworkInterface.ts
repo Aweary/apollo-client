@@ -7,7 +7,6 @@ import {
 import {
   GraphQLResult,
   Document,
-  parse,
   print,
 } from 'graphql';
 
@@ -60,7 +59,7 @@ export class MockNetworkInterface implements NetworkInterface {
   public query(request: Request) {
     return new Promise((resolve, reject) => {
       const parsedRequest: ParsedRequest = {
-        query: parse(request.query),
+        query: request.query,
         variables: request.variables,
         debugName: request.debugName,
       };
@@ -92,7 +91,6 @@ export class MockBatchedNetworkInterface
 extends MockNetworkInterface implements BatchedNetworkInterface {
   public batchQuery(requests: Request[]): Promise<GraphQLResult[]> {
     const resultPromises: Promise<GraphQLResult>[] = [];
-
     requests.forEach((request) => {
       resultPromises.push(this.query(request));
     });
