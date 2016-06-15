@@ -105,7 +105,7 @@ export class QueryManager {
   private networkInterface: NetworkInterface;
   private store: ApolloStore;
   private reduxRootKey: string;
-  private pollingTimers: {[queryId: string]: NodeJS.Timer | any}; //oddity in Typescript
+
   private queryTransformer: QueryTransformer;
   private queryListeners: { [queryId: string]: QueryListener };
 
@@ -113,7 +113,7 @@ export class QueryManager {
 
   private scheduler: QueryScheduler;
   private batcher: QueryBatcher;
-  private batcherPollInterval = 100;
+  private batcherPollInterval = 25;
 
   constructor({
     networkInterface,
@@ -134,7 +134,7 @@ export class QueryManager {
     this.store = store;
     this.reduxRootKey = reduxRootKey;
     this.queryTransformer = queryTransformer;
-    this.pollingTimers = {};
+
 
     const isBatchingInterface =
       (this.networkInterface as BatchedNetworkInterface).batchQuery !== undefined;
@@ -438,7 +438,7 @@ export class QueryManager {
         queryId: queryId,
       };
 
-      return this.batcher.queueRequest(fetchRequest)
+      return this.batcher.enqueueRequest(fetchRequest)
         .then((result: GraphQLResult) => {
           // XXX handle multiple GraphQLResults
           this.store.dispatch({
@@ -504,9 +504,7 @@ export class QueryManager {
     delete this.queryListeners[queryId];
 
     // if we have a polling interval running, stop it
-    if (this.pollingTimers[queryId]) {
-      clearInterval(this.pollingTimers[queryId]);
-    }
+    this.scheduler.stopPollingQuery(queryId);
 
     this.store.dispatch({
       type: 'APOLLO_QUERY_STOP',
